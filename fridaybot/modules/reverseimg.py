@@ -11,26 +11,28 @@ import io
 import os
 import re
 import urllib
-
+import shutil
+from re import findall
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
-
-from fridaybot import CMD_HELP, bot
-from fridaybot.utils import errors_handler, register
+from fridaybot.function.gmdl import googleimagesdownload
+from fridaybot import CMD_HELP
+from fridaybot.utils import errors_handler, register, friday_on_cmd
 
 opener = urllib.request.build_opener()
 useragent = "Mozilla/5.0 (Linux; Android 9; SM-G960F Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.157 Mobile Safari/537.36"
 opener.addheaders = [("User-agent", useragent)]
 
 
-@register(outgoing=True, pattern=r"^.reverse(?: |$)(\d*)")
-@errors_handler
+@friday.on(friday_on_cmd(pattern=r"reverse(?: |$)(\d*)"))
 async def okgoogle(img):
+    if img.fwd_from:
+        return
     """ For .reverse command, Google search images and stickers. """
     if os.path.isfile("okgoogle.png"):
         os.remove("okgoogle.png")
-
+    event = img
     message = await img.get_reply_message()
     if message and message.media:
         photo = io.BytesIO()
@@ -74,27 +76,29 @@ async def okgoogle(img):
         else:
             await img.edit("`Can't find this piece of shit.`")
             return
-
-        if img.pattern_match.group(1):
-            lim = img.pattern_match.group(1)
-        else:
-            lim = 3
-        images = await scam(match, lim)
-        yeet = []
-        for i in images:
-            k = requests.get(i)
-            yeet.append(k.content)
+        lim = findall(r"lim=\d+", guess)
         try:
-            await img.client.send_file(
-                entity=await img.client.get_input_entity(img.chat_id),
-                file=yeet,
-                reply_to=img,
-            )
-        except TypeError:
-            pass
-        await img.edit(
-            f"[{guess}]({fetchUrl})\n\n[Visually similar images]({imgspage})"
+            lim = lim[0]
+            lim = lim.replace("lim=", "")
+            guess = guess.replace("lim=" + lim[0], "")
+        except IndexError:
+            lim = 5
+        response = googleimagesdownload()
+        logger.info(guess)
+        arguments = {
+            "keywords": guess,
+            "silent_mode": True,
+            "limit": lim,
+            "format": "jpg",
+            "no_directory": "no_directory",
+        }
+        paths = response.download(arguments)
+        lst = paths[0][guess]
+        await event.edit(f"[{guess}]({fetchUrl})\n\n[Visually similar images]({imgspage})")
+        await event.client.send_file(
+            await event.client.get_input_entity(event.chat_id), lst
         )
+        shutil.rmtree(os.path.dirname(os.path.abspath(lst[0])))
 
 
 async def ParseSauce(googleurl):
@@ -118,27 +122,6 @@ async def ParseSauce(googleurl):
         results["best_guess"] = best_guess.get_text()
 
     return results
-
-
-async def scam(results, lim):
-
-    single = opener.open(results["similar_images"]).read()
-    decoded = single.decode("utf-8")
-
-    imglinks = []
-    counter = 0
-
-    pattern = r"^,\[\"(.*[.png|.jpg|.jpeg])\",[0-9]+,[0-9]+\]$"
-    oboi = re.findall(pattern, decoded, re.I | re.M)
-
-    for imglink in oboi:
-        counter += 1
-        if not counter >= int(lim):
-            imglinks.append(imglink)
-        else:
-            break
-
-    return imglinks
 
 
 CMD_HELP.update(

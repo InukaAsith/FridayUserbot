@@ -8,17 +8,17 @@ import shutil
 from re import findall
 
 from fridaybot import CMD_HELP
-from fridaybot.googol_images import googleimagesdownload
+from fridaybot.function.gmdl import googleimagesdownload
 from fridaybot.utils import edit_or_reply, friday_on_cmd, sudo_cmd
 
 
-@friday.on(friday_on_cmd(pattern="img ?(.*)"))
-@friday.on(sudo_cmd(pattern="img ?(.*)", allow_sudo=True))
+@friday.on(friday_on_cmd(pattern="(img|image|googleimage|gi) ?(.*)"))
+@friday.on(sudo_cmd(pattern="(img|image|googleimage|gi) ?(.*)", allow_sudo=True))
 async def img_sampler(event):
     await edit_or_reply(event, "`Processing...`")
     reply = await event.get_reply_message()
-    if event.pattern_match.group(1):
-        query = event.pattern_match.group(1)
+    if event.pattern_match.group(2):
+        query = event.pattern_match.group(2)
     elif reply:
         query = reply.message
     else:
@@ -36,15 +36,14 @@ async def img_sampler(event):
     except IndexError:
         lim = 5
     response = googleimagesdownload()
-
     # creating list of arguments
     arguments = {
         "keywords": query,
         "limit": lim,
         "format": "jpg",
+        "silent_mode": True,
         "no_directory": "no_directory",
     }
-
     # passing the arguments to the function
     paths = response.download(arguments)
     lst = paths[0][query]
