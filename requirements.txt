@@ -6,6 +6,7 @@ nospamplus
 img2pdf
 pymediainfo
 apscheduler
+youtube_dl
 git+https://github.com/chsaiujwal/maigret
 git+https://github.com/gleitz/howdoi
 pyseoanalyzer
@@ -16,7 +17,6 @@ pokedex.py
 faker
 tracemoepy
 deep_translator
-pornhub-api
 countryinfo
 mal-api
 youtube-search-python
@@ -41,7 +41,6 @@ python-magic
 glitch_this
 PyGithub
 pytesseract
-youtube-dl
 opencv-contrib-python
 Telethon==1.19.0
 iplookup
