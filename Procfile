@@ -1,1 +1,0 @@
-fridaybot: python -m fridaybot
